@@ -8,7 +8,7 @@ fn main() {
     }
 
     match weather_api::fetch_weather(&args[1]) {
-        Ok(info) => println!("Temperature in {}: {:.1}°C", info.city, info.temperature_c),
+        Ok(info) => println!("Temperature in {}: {:.1}°C, humidity: {}%", info.city, info.temperature_c, info.humidity_percentage),
         Err(e) => {
             eprintln!("Error: {}", e);
             std::process::exit(1);

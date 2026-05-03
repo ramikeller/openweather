@@ -20,11 +20,13 @@ struct WeatherResponse {
 #[derive(Deserialize)]
 struct Current {
     temperature_2m: f64,
+    relative_humidity_2m: u8,
 }
 
 pub struct WeatherInfo {
     pub city: String,
     pub temperature_c: f64,
+    pub humidity_percentage: u8,
 }
 
 pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
@@ -49,7 +51,7 @@ pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
         .ok_or_else(|| format!("City '{}' not found", city))?;
 
     let weather_url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m",
+        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m",
         location.latitude, location.longitude
     );
 
@@ -66,5 +68,6 @@ pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
     Ok(WeatherInfo {
         city: location.name,
         temperature_c: weather.current.temperature_2m,
+        humidity_percentage: weather.current.relative_humidity_2m,
     })
 }
