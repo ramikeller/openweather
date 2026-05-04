@@ -29,6 +29,29 @@ pub struct WeatherInfo {
     pub humidity_percentage: u8,
 }
 
+fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherInfo, String> {
+    let weather_url = format!(
+        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m",
+        lat, lng
+    );
+
+    let weather_response = reqwest::blocking::get(&weather_url)
+        .map_err(|e| format!("Failed to connect to weather API: {}", e))?;
+
+    if !weather_response.status().is_success() {
+        return Err(format!("Weather API returned status {}", weather_response.status()));
+    }
+
+    let weather: WeatherResponse = weather_response.json()
+        .map_err(|e| format!("Failed to parse weather response: {}", e))?;
+
+    Ok(WeatherInfo {
+        city: display_name,
+        temperature_c: weather.current.temperature_2m,
+        humidity_percentage: weather.current.relative_humidity_2m,
+    })
+}
+
 pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
     let geo_url = format!(
         "https://geocoding-api.open-meteo.com/v1/search?name={}&count=1&language=en&format=json",
@@ -50,24 +73,10 @@ pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
         .and_then(|mut r| if r.is_empty() { None } else { Some(r.remove(0)) })
         .ok_or_else(|| format!("City '{}' not found", city))?;
 
-    let weather_url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m",
-        location.latitude, location.longitude
-    );
+    fetch_weather_at(location.latitude, location.longitude, location.name)
+}
 
-    let weather_response = reqwest::blocking::get(&weather_url)
-        .map_err(|e| format!("Failed to connect to weather API: {}", e))?;
-
-    if !weather_response.status().is_success() {
-        return Err(format!("Weather API returned status {}", weather_response.status()));
-    }
-
-    let weather: WeatherResponse = weather_response.json()
-        .map_err(|e| format!("Failed to parse weather response: {}", e))?;
-
-    Ok(WeatherInfo {
-        city: location.name,
-        temperature_c: weather.current.temperature_2m,
-        humidity_percentage: weather.current.relative_humidity_2m,
-    })
+pub fn fetch_weather_coords(lat: f64, lng: f64) -> Result<WeatherInfo, String> {
+    let display_name = format!("{}, {}", lat, lng);
+    fetch_weather_at(lat, lng, display_name)
 }
