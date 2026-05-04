@@ -52,7 +52,7 @@ fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherI
     })
 }
 
-pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
+fn geocode_city(city: &str) -> Result<GeoResult, String> {
     let geo_url = format!(
         "https://geocoding-api.open-meteo.com/v1/search?name={}&count=1&language=en&format=json",
         city.replace(' ', "+")
@@ -68,11 +68,13 @@ pub fn fetch_weather(city: &str) -> Result<WeatherInfo, String> {
     let geo: GeoResponse = geo_response.json()
         .map_err(|e| format!("Failed to parse geocoding response: {}", e))?;
 
-    let location = geo
-        .results
+    geo.results
         .and_then(|mut r| if r.is_empty() { None } else { Some(r.remove(0)) })
-        .ok_or_else(|| format!("City '{}' not found", city))?;
+        .ok_or_else(|| format!("City '{}' not found", city))
+}
 
+pub fn fetch_weather_city(city: &str) -> Result<WeatherInfo, String> {
+    let location = geocode_city(city)?;
     fetch_weather_at(location.latitude, location.longitude, location.name)
 }
 

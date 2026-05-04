@@ -4,7 +4,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     let result = match args.len() {
-        2 => weather_api::fetch_weather(&args[1]),
+        2 => weather_api::fetch_weather_city(&args[1]),
         3 => {
             let lat = args[1].parse::<f64>()
                 .map_err(|_| format!("Invalid latitude '{}': expected a number", args[1]));
