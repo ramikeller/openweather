@@ -79,6 +79,12 @@ pub fn fetch_weather_city(city: &str) -> Result<WeatherInfo, String> {
 }
 
 pub fn fetch_weather_coords(lat: f64, lng: f64) -> Result<WeatherInfo, String> {
+    if !(-90.0..=90.0).contains(&lat) {
+        return Err(format!("Invalid latitude '{}': must be between -90 and 90", lat));
+    }
+    if !(-180.0..=180.0).contains(&lng) {
+        return Err(format!("Invalid longitude '{}': must be between -180 and 180", lng));
+    }
     let display_name = format!("{}, {}", lat, lng);
     fetch_weather_at(lat, lng, display_name)
 }
