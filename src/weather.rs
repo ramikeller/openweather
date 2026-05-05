@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use urlencoding::encode;
 
 #[derive(Deserialize)]
 struct GeoResponse {
@@ -55,7 +56,7 @@ fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherI
 fn geocode_city(city: &str) -> Result<GeoResult, String> {
     let geo_url = format!(
         "https://geocoding-api.open-meteo.com/v1/search?name={}&count=1&language=en&format=json",
-        city.replace(' ', "+")
+        encode(city)
     );
 
     let geo_response = reqwest::blocking::get(&geo_url)
