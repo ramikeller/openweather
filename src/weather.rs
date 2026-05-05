@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use urlencoding::encode;
 
+const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast";
+const GEOCODING_API: &str = "https://geocoding-api.open-meteo.com/v1/search";
+
 #[derive(Deserialize)]
 struct GeoResponse {
     results: Option<Vec<GeoResult>>,
@@ -30,10 +33,9 @@ pub struct WeatherInfo {
     pub humidity_percentage: u8,
 }
 
-fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherInfo, String> {
+fn fetch_weather_at(lat: f64, lng: f64, name: String) -> Result<WeatherInfo, String> {
     let weather_url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m",
-        lat, lng
+        "{WEATHER_API}?latitude={lat}&longitude={lng}&current=temperature_2m,relative_humidity_2m"
     );
 
     let weather_response = reqwest::blocking::get(&weather_url)
@@ -47,7 +49,7 @@ fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherI
         .map_err(|e| format!("Failed to parse weather response: {}", e))?;
 
     Ok(WeatherInfo {
-        city: display_name,
+        city: name,
         temperature_c: weather.current.temperature_2m,
         humidity_percentage: weather.current.relative_humidity_2m,
     })
@@ -55,7 +57,7 @@ fn fetch_weather_at(lat: f64, lng: f64, display_name: String) -> Result<WeatherI
 
 fn geocode_city(city: &str) -> Result<GeoResult, String> {
     let geo_url = format!(
-        "https://geocoding-api.open-meteo.com/v1/search?name={}&count=1&language=en&format=json",
+        "{GEOCODING_API}?name={}&count=1&language=en&format=json",
         encode(city)
     );
 
@@ -70,7 +72,7 @@ fn geocode_city(city: &str) -> Result<GeoResult, String> {
         .map_err(|e| format!("Failed to parse geocoding response: {}", e))?;
 
     geo.results
-        .and_then(|mut r| if r.is_empty() { None } else { Some(r.remove(0)) })
+        .and_then(|r| r.into_iter().next())
         .ok_or_else(|| format!("City '{}' not found", city))
 }
 
@@ -91,8 +93,8 @@ fn validate_coords(lat: f64, lng: f64) -> Result<(), String> {
 
 pub fn fetch_weather_coords(lat: f64, lng: f64) -> Result<WeatherInfo, String> {
     validate_coords(lat, lng)?;
-    let display_name = format!("{}, {}", lat, lng);
-    fetch_weather_at(lat, lng, display_name)
+    let name = format!("{}, {}", lat, lng);
+    fetch_weather_at(lat, lng, name)
 }
 
 #[cfg(test)]
