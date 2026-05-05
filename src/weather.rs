@@ -1,3 +1,4 @@
+use reqwest::blocking::Client;
 use serde::Deserialize;
 use urlencoding::encode;
 
@@ -33,12 +34,12 @@ pub struct WeatherInfo {
     pub humidity_percentage: u8,
 }
 
-fn fetch_weather_at(lat: f64, lng: f64, name: String) -> Result<WeatherInfo, String> {
+fn fetch_weather_at(client: &Client, lat: f64, lng: f64, name: String) -> Result<WeatherInfo, String> {
     let weather_url = format!(
         "{WEATHER_API}?latitude={lat}&longitude={lng}&current=temperature_2m,relative_humidity_2m"
     );
 
-    let weather_response = reqwest::blocking::get(&weather_url)
+    let weather_response = client.get(&weather_url).send()
         .map_err(|e| format!("Failed to connect to weather API: {}", e))?;
 
     if !weather_response.status().is_success() {
@@ -55,13 +56,13 @@ fn fetch_weather_at(lat: f64, lng: f64, name: String) -> Result<WeatherInfo, Str
     })
 }
 
-fn geocode_city(city: &str) -> Result<GeoResult, String> {
+fn geocode_city(client: &Client, city: &str) -> Result<GeoResult, String> {
     let geo_url = format!(
         "{GEOCODING_API}?name={}&count=1&language=en&format=json",
         encode(city)
     );
 
-    let geo_response = reqwest::blocking::get(&geo_url)
+    let geo_response = client.get(&geo_url).send()
         .map_err(|e| format!("Failed to connect to geocoding API: {}", e))?;
 
     if !geo_response.status().is_success() {
@@ -76,9 +77,9 @@ fn geocode_city(city: &str) -> Result<GeoResult, String> {
         .ok_or_else(|| format!("City '{}' not found", city))
 }
 
-pub fn fetch_weather_city(city: &str) -> Result<WeatherInfo, String> {
-    let location = geocode_city(city)?;
-    fetch_weather_at(location.latitude, location.longitude, location.name)
+pub fn fetch_weather_city(client: &Client, city: &str) -> Result<WeatherInfo, String> {
+    let location = geocode_city(client, city)?;
+    fetch_weather_at(client, location.latitude, location.longitude, location.name)
 }
 
 fn validate_coords(lat: f64, lng: f64) -> Result<(), String> {
@@ -91,10 +92,10 @@ fn validate_coords(lat: f64, lng: f64) -> Result<(), String> {
     Ok(())
 }
 
-pub fn fetch_weather_coords(lat: f64, lng: f64) -> Result<WeatherInfo, String> {
+pub fn fetch_weather_coords(client: &Client, lat: f64, lng: f64) -> Result<WeatherInfo, String> {
     validate_coords(lat, lng)?;
     let name = format!("{}, {}", lat, lng);
-    fetch_weather_at(lat, lng, name)
+    fetch_weather_at(client, lat, lng, name)
 }
 
 #[cfg(test)]
