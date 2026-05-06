@@ -2,7 +2,6 @@ mod weather;
 
 use clap::Parser;
 use std::time::Duration;
-use reqwest::blocking::Client;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -16,16 +15,11 @@ struct Args {
     positional: Vec<String>,
 }
 
-fn build_client(timeout: Duration) -> Result<Client, reqwest::Error> {
-    Client::builder().timeout(timeout).build()
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let timeout_secs = args.timeout;
 
-    let client = build_client(Duration::from_secs(timeout_secs))?;
-    let weather_client = weather::WeatherClient::new(client);
+    let weather_client = weather::WeatherClient::new(Duration::from_secs(timeout_secs))?;
 
     let info = match args.positional.len() {
         1 => weather_client.fetch_weather_city(&args.positional[0])?,

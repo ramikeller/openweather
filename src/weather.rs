@@ -2,6 +2,7 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 use thiserror::Error;
 use urlencoding::encode;
+use std::time::Duration;
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast";
 const GEOCODING_API: &str = "https://geocoding-api.open-meteo.com/v1/search";
@@ -57,8 +58,9 @@ pub struct WeatherClient {
 }
 
 impl WeatherClient {
-    pub fn new(client: Client) -> Self {
-        Self { client }
+    pub fn new(timeout: Duration) -> Result<Self, reqwest::Error> {
+        let client = Client::builder().timeout(timeout).build()?;
+        Ok(Self { client })
     }
 
     /// Fetch the current weather for a specific latitude/longitude and return it as `WeatherInfo`.
