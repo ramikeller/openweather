@@ -1,31 +1,27 @@
 mod weather;
 
+use clap::Parser;
 use std::time::Duration;
 use reqwest::blocking::Client;
 
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Timeout in seconds for the HTTP client.
+    #[arg(long, default_value_t = 10)]
+    timeout: u64,
+
+    /// City name or latitude/longitude values.
+    #[arg(value_name = "CITY_OR_LAT")]
+    positional: Vec<String>,
+}
+
 fn main() {
-    let raw_args: Vec<String> = std::env::args().collect();
+    let args = Args::parse();
+    let timeout_secs = args.timeout;
+    let positional = args.positional;
 
-    let mut timeout_secs: u64 = 10;
-    let mut positional: Vec<String> = Vec::new();
-    let mut i = 1;
-    while i < raw_args.len() {
-        if raw_args[i] == "--timeout" {
-            i += 1;
-            if i >= raw_args.len() {
-                eprintln!("Error: --timeout requires a value");
-                std::process::exit(1);
-            }
-            timeout_secs = raw_args[i].parse::<u64>().unwrap_or_else(|_| {
-                eprintln!("Error: --timeout value '{}' is not a valid number of seconds", raw_args[i]);
-                std::process::exit(1);
-            });
-        } else {
-            positional.push(raw_args[i].clone());
-        }
-        i += 1;
-    }
-
+    // Client stub that is shared for both the geocoding and forecasting API calls.
     let client = Client::builder()
         .timeout(Duration::from_secs(timeout_secs))
         .build()
@@ -34,6 +30,7 @@ fn main() {
             std::process::exit(1);
         });
 
+    let program_name = std::env::args().next().unwrap_or_else(|| "openweather".to_string());
     let result = match positional.len() {
         1 => weather::fetch_weather_city(&client, &positional[0]),
         2 => {
@@ -48,8 +45,8 @@ fn main() {
         }
         _ => {
             eprintln!("Usage:");
-            eprintln!("  {} [--timeout <secs>] <city>", raw_args[0]);
-            eprintln!("  {} [--timeout <secs>] <lat> <lng>", raw_args[0]);
+            eprintln!("  {} [--timeout <secs>] <city>", program_name);
+            eprintln!("  {} [--timeout <secs>] <lat> <lng>", program_name);
             std::process::exit(1);
         }
     };

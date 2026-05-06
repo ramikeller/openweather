@@ -34,6 +34,7 @@ pub struct WeatherInfo {
     pub humidity_percentage: u8,
 }
 
+/// Fetch the current weather for a specific latitude/longitude and return it as `WeatherInfo`.
 fn fetch_weather_at(client: &Client, lat: f64, lng: f64, name: String) -> Result<WeatherInfo, String> {
     let weather_url = format!(
         "{WEATHER_API}?latitude={lat}&longitude={lng}&current=temperature_2m,relative_humidity_2m"
@@ -56,6 +57,7 @@ fn fetch_weather_at(client: &Client, lat: f64, lng: f64, name: String) -> Result
     })
 }
 
+/// Look up geographic coordinates for a city name using the geocoding API.
 fn geocode_city(client: &Client, city: &str) -> Result<GeoResult, String> {
     let geo_url = format!(
         "{GEOCODING_API}?name={}&count=1&language=en&format=json",
@@ -77,11 +79,13 @@ fn geocode_city(client: &Client, city: &str) -> Result<GeoResult, String> {
         .ok_or_else(|| format!("City '{}' not found", city))
 }
 
+/// Fetch weather by city name by first geocoding the city and then querying weather data.
 pub fn fetch_weather_city(client: &Client, city: &str) -> Result<WeatherInfo, String> {
     let location = geocode_city(client, city)?;
     fetch_weather_at(client, location.latitude, location.longitude, location.name)
 }
 
+/// Ensure latitude and longitude values are within valid geographic bounds.
 fn validate_coords(lat: f64, lng: f64) -> Result<(), String> {
     if !(-90.0..=90.0).contains(&lat) {
         return Err(format!("Invalid latitude '{}': must be between -90 and 90", lat));
@@ -92,6 +96,7 @@ fn validate_coords(lat: f64, lng: f64) -> Result<(), String> {
     Ok(())
 }
 
+/// Fetch weather directly for a latitude/longitude pair after validating coordinates.
 pub fn fetch_weather_coords(client: &Client, lat: f64, lng: f64) -> Result<WeatherInfo, String> {
     validate_coords(lat, lng)?;
     let name = format!("{}, {}", lat, lng);
