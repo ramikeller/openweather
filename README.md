@@ -5,8 +5,8 @@ A command-line tool that reports the current temperature and humidity for a give
 ## Usage
 
 ```
-openweather <city>
-openweather <lat> <lng>
+openweather [--timeout <secs>] <city>
+openweather [--timeout <secs>] <lat> <lng>
 ```
 
 Multi-word city names should be quoted at the shell:
@@ -14,6 +14,8 @@ Multi-word city names should be quoted at the shell:
 ```
 openweather "New York"
 ```
+
+The `--timeout` option sets the HTTP client timeout in seconds (default: 10).
 
 **Example output**
 

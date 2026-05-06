@@ -47,7 +47,7 @@ Returns current conditions for the resolved coordinates.
 
 - **Endpoint:** `https://api.open-meteo.com/v1/forecast`
 - **Query parameters:** `latitude`, `longitude`, `current=temperature_2m,relative_humidity_2m`
-- **Used fields:** `current.temperature_2m`, `current.relative_humidity_2m`
+- **Used fields:** `current.temperature_2m`, `current.relative_humidity_2m` (current object may be null)
 
 Temperature is requested and displayed in Celsius.
 
@@ -57,15 +57,16 @@ All errors are written to stderr and exit with code 1.
 
 | Condition | Message |
 |---|---|
-| Wrong number of arguments | `Usage:` plus auto-generated usage text |
-| City not found (empty geocoding results) | `Error: City '<input>' not found` |
+| Wrong number of arguments | `Usage:` plus usage text |
 | Invalid latitude/longitude parse | `Error: Invalid latitude '<input>': expected a number` or `Error: Invalid longitude '<input>': expected a number` |
-| Latitude/longitude out of range | `Invalid latitude '<value>': must be between -90 and 90` or `Invalid longitude '<value>': must be between -180 and 180` |
-| Geocoding API unreachable | `Error: Failed to connect to geocoding API: <detail>` |
-| Geocoding API non-2xx response | `Error: Geocoding API returned status <code>` |
-| Weather API unreachable | `Error: Failed to connect to weather API: <detail>` |
-| Weather API non-2xx response | `Error: Weather API returned status <code>` |
-| Unexpected response format | `Error: Failed to parse geocoding/weather response: <detail>` |
+| Latitude/longitude out of range | `Error: Invalid coordinates: latitude '<value>' must be between -90 and 90` or `Error: Invalid coordinates: longitude '<value>' must be between -180 and 180` |
+| City not found (empty geocoding results) | `Error: City '<input>' not found` |
+| Geocoding API unreachable | `Error: HTTP request failed: <detail>` |
+| Geocoding API non-2xx response | `Error: API returned status <code>` |
+| Weather API unreachable | `Error: HTTP request failed: <detail>` |
+| Weather API non-2xx response | `Error: API returned status <code>` |
+| Unexpected response format | `Error: Failed to parse response: <detail>` |
+| Missing data in API response | `Error: Missing data in response: <detail>` |
 
 On success the process exits with code 0.
 

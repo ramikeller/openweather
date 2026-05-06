@@ -16,46 +16,34 @@ struct Args {
     positional: Vec<String>,
 }
 
-fn main() {
+fn build_client(timeout: Duration) -> Result<Client, reqwest::Error> {
+    Client::builder().timeout(timeout).build()
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let timeout_secs = args.timeout;
-    let positional = args.positional;
 
-    // Client stub that is shared for both the geocoding and forecasting API calls.
-    let client = Client::builder()
-        .timeout(Duration::from_secs(timeout_secs))
-        .build()
-        .unwrap_or_else(|e| {
-            eprintln!("Error: failed to build HTTP client: {}", e);
-            std::process::exit(1);
-        });
+    let client = build_client(Duration::from_secs(timeout_secs))?;
+    let weather_client = weather::WeatherClient::new(client);
 
-    let program_name = std::env::args().next().unwrap_or_else(|| "openweather".to_string());
-    let result = match positional.len() {
-        1 => weather::fetch_weather_city(&client, &positional[0]),
+    let info = match args.positional.len() {
+        1 => weather_client.fetch_weather_city(&args.positional[0])?,
         2 => {
-            let lat = positional[0].parse::<f64>()
-                .map_err(|_| format!("Invalid latitude '{}': expected a number", positional[0]));
-            let lng = positional[1].parse::<f64>()
-                .map_err(|_| format!("Invalid longitude '{}': expected a number", positional[1]));
-            match (lat, lng) {
-                (Ok(lat), Ok(lng)) => weather::fetch_weather_coords(&client, lat, lng),
-                (Err(e), _) | (_, Err(e)) => Err(e),
-            }
+            let lat = args.positional[0].parse::<f64>()
+                .map_err(|_| format!("Invalid latitude '{}': expected a number", args.positional[0]))?;
+            let lng = args.positional[1].parse::<f64>()
+                .map_err(|_| format!("Invalid longitude '{}': expected a number", args.positional[1]))?;
+            weather_client.fetch_weather_coords(lat, lng)?
         }
         _ => {
-            eprintln!("Usage:");
-            eprintln!("  {} [--timeout <secs>] <city>", program_name);
-            eprintln!("  {} [--timeout <secs>] <lat> <lng>", program_name);
+            eprintln!("Usage: {} [--timeout <secs>] <city> or {} [--timeout <secs>] <lat> <lng>", 
+                     std::env::args().next().unwrap_or_else(|| "openweather".to_string()),
+                     std::env::args().next().unwrap_or_else(|| "openweather".to_string()));
             std::process::exit(1);
         }
     };
 
-    match result {
-        Ok(info) => println!("Temperature in {}: {:.1}°C, humidity: {}%", info.city, info.temperature_c, info.humidity_percentage),
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            std::process::exit(1);
-        }
-    }
+    println!("Temperature in {}: {:.1}°C, humidity: {}%", info.city, info.temperature_c, info.humidity_percentage);
+    Ok(())
 }
